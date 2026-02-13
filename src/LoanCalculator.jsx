@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from "react";
+import * as XLSX from "xlsx";
 
 // ─── Utility Functions ───────────────────────────────────────────────────────
 
@@ -25,14 +26,15 @@ function daysBetween(d1, d2) {
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
-function formatARS(num) {
+function formatCurrency(num, currency = "ARS") {
   if (num == null || isNaN(num)) return "—";
-  return num.toLocaleString("es-AR", {
+  const formatted = num.toLocaleString(currency === "USD" ? "en-US" : "es-AR", {
     style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
+  return formatted.replace(/\s/g, "");
 }
 
 // ─── Core Calculation Engine ─────────────────────────────────────────────────
@@ -135,11 +137,12 @@ function computeLoan(principal, tna, nMonths, startDate, firstPaymentDate) {
 
 const DEFAULT_SCENARIO = {
   name: "Escenario 1",
-  principal: "1641972.99",
-  tna: "70",
-  nMonths: "6",
-  startDate: "2026-02-13",
-  firstPaymentDate: "2026-03-13",
+  principal: "",
+  tna: "",
+  nMonths: "",
+  startDate: "",
+  firstPaymentDate: "",
+  currency: "ARS",
 };
 
 function createScenario(index) {
@@ -151,6 +154,7 @@ function createScenario(index) {
     nMonths: "",
     startDate: "",
     firstPaymentDate: "",
+    currency: "ARS",
   };
 }
 
@@ -164,6 +168,8 @@ export default function LoanCalculator() {
   const printRef = useRef(null);
 
   const scenario = scenarios[activeIdx];
+  const fmt = (num) => formatCurrency(num, scenario.currency);
+  const currLabel = scenario.currency === "USD" ? "USD" : "ARS";
 
   const updateField = useCallback((field, value) => {
     setScenarios((prev) => {
@@ -207,20 +213,68 @@ export default function LoanCalculator() {
     window.print();
   };
 
-  const exportCSV = () => {
+  const exportExcel = () => {
     if (!result) return;
-    const headers = ["#", "Fecha", "Días", "Saldo Inicial", "Cuota", "Interés", "Capital", "Saldo Final"];
-    const rows = result.schedule.map((r) =>
-      [r.n, formatDate(r.date), r.days, r.openingBalance.toFixed(2), r.payment.toFixed(2), r.interest.toFixed(2), r.principalPaid.toFixed(2), r.closingBalance.toFixed(2)].join(",")
-    );
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${scenario.name.replace(/\s+/g, "_")}_amortizacion.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    const r = Math.round;
+    const rows = [];
+
+    // Title
+    rows.push(["WestCredito - Cronograma de Amortización"]);
+    rows.push([]);
+
+    // Metadata
+    rows.push(["Escenario", scenario.name]);
+    rows.push(["Moneda", scenario.currency]);
+    rows.push(["Monto del Préstamo", r(parseFloat(scenario.principal))]);
+    rows.push(["TNA (%)", `${scenario.tna}%`]);
+    rows.push(["Plazo", `${scenario.nMonths} meses`]);
+    rows.push(["Fecha de Inicio", scenario.startDate]);
+    rows.push(["Fecha Primer Pago", scenario.firstPaymentDate]);
+    rows.push(["Cuota Fija Mensual", r(result.fixedPayment)]);
+    rows.push(["Total Intereses", r(result.totalInterest)]);
+    rows.push(["Total a Pagar", r(result.totalPaid)]);
+    rows.push([]);
+
+    // Table headers
+    rows.push(["#", "Fecha", "Días", "Saldo Inicial", "Cuota", "Interés", "Capital", "Saldo Final"]);
+
+    // Schedule data
+    result.schedule.forEach((row) => {
+      rows.push([
+        row.n,
+        formatDate(row.date),
+        row.days,
+        r(row.openingBalance),
+        r(row.payment),
+        r(row.interest),
+        r(row.principalPaid),
+        r(row.closingBalance),
+      ]);
+    });
+
+    // Totals row
+    rows.push([]);
+    rows.push(["", "TOTAL", "", "", r(result.totalPaid), r(result.totalInterest), r(parseFloat(scenario.principal)), ""]);
+
+    // Create workbook
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Column widths
+    ws["!cols"] = [
+      { wch: 5 },   // #
+      { wch: 14 },  // Fecha
+      { wch: 6 },   // Días
+      { wch: 18 },  // Saldo Inicial
+      { wch: 16 },  // Cuota
+      { wch: 16 },  // Interés
+      { wch: 16 },  // Capital
+      { wch: 18 },  // Saldo Final
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, scenario.name.slice(0, 31));
+    XLSX.writeFile(wb, `WestCredito_${scenario.name.replace(/\s+/g, "_")}_${scenario.startDate}.xlsx`);
   };
 
   return (
@@ -230,21 +284,22 @@ export default function LoanCalculator() {
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-          --bg: #0B0F14;
-          --surface: #131920;
-          --surface2: #1A2230;
-          --border: #243040;
-          --border-focus: #3B82F6;
-          --text: #E8ECF1;
-          --text-dim: #8899AA;
-          --text-muted: #556677;
-          --accent: #3B82F6;
-          --accent-glow: rgba(59, 130, 246, 0.15);
-          --green: #22C55E;
-          --green-dim: rgba(34, 197, 94, 0.12);
-          --amber: #F59E0B;
-          --amber-dim: rgba(245, 158, 11, 0.12);
+          --bg: #0A0608;
+          --surface: #140A10;
+          --surface2: #1C0F16;
+          --border: #2D1520;
+          --border-focus: #630330;
+          --text: #F0E6EB;
+          --text-dim: #A0889A;
+          --text-muted: #6B4F63;
+          --accent: #8B1A4A;
+          --accent-glow: rgba(99, 3, 48, 0.25);
+          --green: #D4A853;
+          --green-dim: rgba(212, 168, 83, 0.12);
+          --amber: #C97D4F;
+          --amber-dim: rgba(201, 125, 79, 0.12);
           --red: #EF4444;
+          --brand: #630330;
           --font: 'DM Sans', -apple-system, sans-serif;
           --mono: 'JetBrains Mono', 'Consolas', monospace;
         }
@@ -255,6 +310,8 @@ export default function LoanCalculator() {
           color: var(--text);
           min-height: 100vh;
           padding: 0;
+          width: 100%;
+          overflow-x: hidden;
         }
 
         /* Header */
@@ -275,17 +332,30 @@ export default function LoanCalculator() {
           gap: 14px;
         }
         .logo-icon {
-          width: 36px;
-          height: 36px;
-          background: linear-gradient(135deg, var(--accent), #6366F1);
-          border-radius: 10px;
+          height: 38px;
           display: flex;
           align-items: center;
-          justify-content: center;
+        }
+        .logo-icon img {
+          height: 38px;
+          width: 38px;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+        .logo-text {
+          font-size: 20px;
+          letter-spacing: -0.3px;
+          line-height: 1;
+        }
+        .logo-text-bold {
           font-weight: 700;
-          font-size: 16px;
-          color: white;
-          letter-spacing: -0.5px;
+          color: var(--text);
+          text-transform: lowercase;
+        }
+        .logo-text-light {
+          font-weight: 300;
+          color: var(--text-dim);
+          text-transform: lowercase;
         }
         .header-title {
           font-size: 17px;
@@ -325,7 +395,7 @@ export default function LoanCalculator() {
           border-color: var(--accent);
           color: white;
         }
-        .btn-primary:hover { background: #2563EB; }
+        .btn-primary:hover { background: #630330; }
         .btn-sm { padding: 5px 10px; font-size: 12px; }
         .btn-icon {
           width: 32px;
@@ -400,6 +470,7 @@ export default function LoanCalculator() {
           display: grid;
           grid-template-columns: 380px 1fr;
           min-height: calc(100vh - 100px);
+          width: 100%;
         }
 
         /* Input Panel */
@@ -410,6 +481,10 @@ export default function LoanCalculator() {
           display: flex;
           flex-direction: column;
           gap: 20px;
+        }
+        .panel-right {
+          overflow-x: auto;
+          min-width: 0;
         }
         .panel-section {
           display: flex;
@@ -453,6 +528,38 @@ export default function LoanCalculator() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 12px;
+        }
+
+        .currency-toggle {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .currency-btn {
+          font-family: var(--mono);
+          font-size: 13px;
+          font-weight: 500;
+          padding: 9px 12px;
+          border: none;
+          background: var(--bg);
+          color: var(--text-muted);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .currency-btn:first-child {
+          border-right: 1px solid var(--border);
+        }
+        .currency-btn.active {
+          background: var(--accent);
+          color: white;
+          font-weight: 600;
+        }
+        .currency-btn:hover:not(.active) {
+          background: var(--surface2);
+          color: var(--text-dim);
         }
 
         .scenario-name-input {
@@ -500,8 +607,8 @@ export default function LoanCalculator() {
           color: var(--text-muted);
           margin-top: 4px;
         }
-        .val-blue { color: var(--accent); }
-        .val-green { color: var(--green); }
+        .val-blue { color: #D4A853; }
+        .val-green { color: #E8B4B8; }
         .val-amber { color: var(--amber); }
 
         /* Table */
@@ -549,7 +656,7 @@ export default function LoanCalculator() {
           font-size: 13px;
           font-weight: 400;
           padding: 10px 14px;
-          border-bottom: 1px solid rgba(36, 48, 64, 0.5);
+          border-bottom: 1px solid rgba(45, 21, 32, 0.5);
           text-align: right;
           white-space: nowrap;
         }
@@ -562,7 +669,7 @@ export default function LoanCalculator() {
           text-align: left;
           color: var(--text-dim);
         }
-        tbody tr:hover { background: rgba(59, 130, 246, 0.04); }
+        tbody tr:hover { background: rgba(99, 3, 48, 0.08); }
         tbody tr:last-child td { border-bottom: none; }
 
         .td-interest { color: var(--amber); }
@@ -600,24 +707,38 @@ export default function LoanCalculator() {
 
         /* Print styles */
         @media print {
+          @page { margin: 0; }
           .no-print { display: none !important; }
-          .app { background: white; color: black; }
-          .main { display: block; }
-          .panel-left { display: none; }
-          .summary-grid { padding: 12px 0; }
-          .summary-card { background: white; border: 1px solid #ddd; }
-          .summary-card-value { color: black !important; }
-          .summary-card-label { color: #666; }
-          .table-container { padding: 0; }
-          table { font-size: 11px; }
-          thead th { background: white; color: #333; border-bottom: 2px solid #333; }
-          tbody td { color: black; border-bottom: 1px solid #ddd; }
-          .td-interest { color: #996600; }
-          .td-principal { color: #006600; }
-          tfoot td { border-top: 2px solid #333; }
-          .print-header { display: block !important; padding: 20px 0; border-bottom: 2px solid #333; margin-bottom: 16px; }
-          .print-header h1 { font-size: 20px; margin-bottom: 12px; }
-          .print-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 12px; }
+          .app {
+            background: white !important;
+            color: black !important;
+            min-height: auto !important;
+            padding: 15mm 18mm !important;
+          }
+          .main {
+            display: block !important;
+          }
+          .panel-left { display: none !important; }
+          .panel-right { overflow: visible !important; }
+          .summary-grid { padding: 14px 0; gap: 8px; }
+          .summary-card { background: white; border: 1px solid #bbb; break-inside: avoid; padding: 12px 14px; }
+          .summary-card-value { color: black !important; font-size: 16px; }
+          .summary-card-label { color: #555; font-size: 10px; }
+          .summary-card-sub { color: #777; font-size: 10px; }
+          .table-container { padding: 0 !important; overflow: visible !important; }
+          .table-header-bar { padding: 0 !important; margin-bottom: 6px; }
+          .table-title { color: black; font-size: 13px; }
+          table { font-size: 10px; }
+          thead th { background: white !important; color: #333; border-bottom: 2px solid #333; position: static !important; font-size: 9px; padding: 6px 8px; }
+          tbody td { color: black; border-bottom: 1px solid #ddd; padding: 5px 8px; font-size: 10px; }
+          .td-interest { color: #996633; }
+          .td-principal { color: #8B6914; }
+          .td-zero { color: #2e7d32; }
+          tfoot td { border-top: 2px solid #333; color: black; padding: 6px 8px; font-size: 10px; }
+          .print-header { display: block !important; padding: 0 0 14px 0; border-bottom: 2px solid #333; margin-bottom: 14px; }
+          .print-header h1 { font-size: 16px; margin-bottom: 8px; color: black; }
+          .print-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 12px; font-size: 10px; }
+          .print-info div { color: black; }
           .print-info span { color: #666; }
         }
 
@@ -633,15 +754,17 @@ export default function LoanCalculator() {
         {/* ─── Header ─── */}
         <div className="header no-print">
           <div className="header-left">
-            <div className="logo-icon">$</div>
-            <div>
-              <div className="header-title">Calculadora de Préstamos</div>
-              <div className="header-subtitle">Simulador de cuotas fijas con interés por días</div>
+            <div className="logo-icon">
+              <img src={`${import.meta.env.BASE_URL}wlogo.png`} alt="WestCredito" />
+            </div>
+            <div className="logo-text">
+              <span className="logo-text-bold">west</span>
+              <span className="logo-text-light">credito</span>
             </div>
           </div>
           <div className="header-actions">
-            <button className="btn" onClick={exportCSV} disabled={!result}>
-              ⬇ CSV
+            <button className="btn" onClick={exportExcel} disabled={!result}>
+              ⬇ Excel
             </button>
             <button className="btn" onClick={handlePrint} disabled={!result}>
               🖨 Imprimir
@@ -688,13 +811,31 @@ export default function LoanCalculator() {
               <div className="panel-section-title">Datos del Préstamo</div>
 
               <div className="field">
-                <label>Monto del Préstamo (ARS)</label>
+                <label>Moneda</label>
+                <div className="currency-toggle">
+                  <button
+                    className={`currency-btn ${scenario.currency === "ARS" ? "active" : ""}`}
+                    onClick={() => updateField("currency", "ARS")}
+                  >
+                    $ ARS
+                  </button>
+                  <button
+                    className={`currency-btn ${scenario.currency === "USD" ? "active" : ""}`}
+                    onClick={() => updateField("currency", "USD")}
+                  >
+                    US$ USD
+                  </button>
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Monto del Préstamo ({currLabel})</label>
                 <input
                   type="number"
                   value={scenario.principal}
                   onChange={(e) => updateField("principal", e.target.value)}
-                  placeholder="1,641,972.99"
-                  step="0.01"
+                  placeholder={scenario.currency === "USD" ? "1000" : "1000000"}
+                  step="1"
                   min="0"
                 />
               </div>
@@ -706,7 +847,7 @@ export default function LoanCalculator() {
                     type="number"
                     value={scenario.tna}
                     onChange={(e) => updateField("tna", e.target.value)}
-                    placeholder="70"
+                    placeholder={scenario.currency === "USD" ? "18" : "70"}
                     step="0.1"
                     min="0"
                     max="999"
@@ -754,12 +895,13 @@ export default function LoanCalculator() {
           </div>
 
           {/* ─── Output Panel ─── */}
-          <div style={{ overflow: "auto" }}>
+          <div className="panel-right">
             {/* Print-only header */}
             <div className="print-header" style={{ display: "none" }}>
-              <h1>Simulación de Préstamo — {scenario.name}</h1>
+              <h1>WestCredito — {scenario.name}</h1>
               <div className="print-info">
-                <div><span>Monto:</span> {formatARS(parseFloat(scenario.principal))}</div>
+                <div><span>Moneda:</span> {currLabel}</div>
+                <div><span>Monto:</span> {fmt(parseFloat(scenario.principal))}</div>
                 <div><span>TNA:</span> {scenario.tna}%</div>
                 <div><span>Plazo:</span> {scenario.nMonths} meses</div>
                 <div><span>Inicio:</span> {scenario.startDate}</div>
@@ -774,7 +916,7 @@ export default function LoanCalculator() {
                   <div className="summary-card">
                     <div className="summary-card-label">Cuota Fija Mensual</div>
                     <div className="summary-card-value val-blue">
-                      {formatARS(result.fixedPayment)}
+                      {fmt(result.fixedPayment)}
                     </div>
                     <div className="summary-card-sub">
                       {scenario.nMonths} cuotas iguales*
@@ -783,7 +925,7 @@ export default function LoanCalculator() {
                   <div className="summary-card">
                     <div className="summary-card-label">Total Intereses</div>
                     <div className="summary-card-value val-amber">
-                      {formatARS(result.totalInterest)}
+                      {fmt(result.totalInterest)}
                     </div>
                     <div className="summary-card-sub">
                       {((result.totalInterest / parseFloat(scenario.principal)) * 100).toFixed(1)}% del capital
@@ -792,7 +934,7 @@ export default function LoanCalculator() {
                   <div className="summary-card">
                     <div className="summary-card-label">Total a Pagar</div>
                     <div className="summary-card-value val-green">
-                      {formatARS(result.totalPaid)}
+                      {fmt(result.totalPaid)}
                     </div>
                     <div className="summary-card-sub">
                       Capital + intereses
@@ -827,12 +969,12 @@ export default function LoanCalculator() {
                           <td>{r.n}</td>
                           <td>{formatDate(r.date)}</td>
                           <td>{r.days}</td>
-                          <td>{formatARS(r.openingBalance)}</td>
-                          <td>{formatARS(r.payment)}</td>
-                          <td className="td-interest">{formatARS(r.interest)}</td>
-                          <td className="td-principal">{formatARS(r.principalPaid)}</td>
+                          <td>{fmt(r.openingBalance)}</td>
+                          <td>{fmt(r.payment)}</td>
+                          <td className="td-interest">{fmt(r.interest)}</td>
+                          <td className="td-principal">{fmt(r.principalPaid)}</td>
                           <td className={r.closingBalance === 0 ? "td-zero" : ""}>
-                            {formatARS(r.closingBalance)}
+                            {fmt(r.closingBalance)}
                           </td>
                         </tr>
                       ))}
@@ -843,9 +985,9 @@ export default function LoanCalculator() {
                         <td style={{ textAlign: "left", color: "var(--text-dim)" }}>TOTAL</td>
                         <td></td>
                         <td></td>
-                        <td>{formatARS(result.totalPaid)}</td>
-                        <td className="td-interest">{formatARS(result.totalInterest)}</td>
-                        <td className="td-principal">{formatARS(parseFloat(scenario.principal))}</td>
+                        <td>{fmt(result.totalPaid)}</td>
+                        <td className="td-interest">{fmt(result.totalInterest)}</td>
+                        <td className="td-principal">{fmt(parseFloat(scenario.principal))}</td>
                         <td></td>
                       </tr>
                     </tfoot>
