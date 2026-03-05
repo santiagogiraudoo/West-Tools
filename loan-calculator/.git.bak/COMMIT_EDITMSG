@@ -1,0 +1,11 @@
+Setup West tools portal with landing page and liquidaciones generator
+
+Reorganize repo from single calculator app into a multi-tool portal:
+- Move calculator source into calculadora/ subdirectory
+- Add professional landing page (index.html) with tool cards
+- Add liquidaciones generator (liquidaciones.html)
+- Add West Inmobiliaria logos to assets/logos/
+- Update GitHub Actions workflow to build calculator and assemble full site
+- Update Vite base path for new directory structure
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>

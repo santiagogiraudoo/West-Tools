@@ -26,17 +26,30 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: calculadora/package-lock.json
 
-      - name: Install
+      - name: Install calculator dependencies
         run: npm ci
+        working-directory: calculadora
 
-      - name: Build
+      - name: Build calculator
         run: npm run build
+        working-directory: calculadora
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/calculadora
+          # Copy root static files
+          cp index.html _site/
+          cp liquidaciones.html _site/
+          cp -r assets _site/assets
+          # Copy calculator build
+          cp -r calculadora/dist/* _site/calculadora/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
 
   deploy:
     environment:

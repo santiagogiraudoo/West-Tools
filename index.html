@@ -1,16 +1,230 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/LoanCalculator/favicon.ico?v=2" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/LoanCalculator/favicon-32.png?v=2" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/LoanCalculator/favicon-16.png?v=2" />
-    <link rel="apple-touch-icon" href="/LoanCalculator/wlogo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WestCredito</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>West Inmobiliaria | Herramientas</title>
+  <link rel="icon" type="image/png" href="assets/logos/W.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #F5F2EC;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ────────────────────────────────── */
+    header {
+      background-color: #0D402F;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      height: 72px;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background-color: #C9A84C;
+    }
+
+    .header-logo {
+      height: 40px;
+    }
+
+    .header-name {
+      height: 28px;
+      margin-left: 1rem;
+    }
+
+    /* ── Main ──────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #0D402F;
+      margin-bottom: 0.35rem;
+    }
+
+    .page-subtitle {
+      font-size: 1rem;
+      color: #5a5a5a;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── Tool Cards Grid ──────────────────────── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .tool-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow 0.2s ease, transform 0.15s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .tool-card:hover {
+      box-shadow: 0 6px 20px rgba(13,64,47,0.12);
+      transform: translateY(-3px);
+    }
+
+    .tool-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+      background-color: #eaf4ef;
+      color: #0D402F;
+    }
+
+    .tool-card h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #0D402F;
+      margin-bottom: 0.5rem;
+    }
+
+    .tool-card p {
+      font-size: 0.9rem;
+      color: #666;
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .tool-badge {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #C9A84C;
+      letter-spacing: 0.03em;
+    }
+
+    /* Placeholder card for future tools */
+    .tool-card.placeholder {
+      border: 2px dashed #d5d0c7;
+      background: transparent;
+      box-shadow: none;
+      cursor: default;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+    }
+
+    .tool-card.placeholder:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .placeholder-text {
+      color: #b0a999;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    /* ── Footer ────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: #888;
+      border-top: 1px solid #e5e0d8;
+    }
+
+    /* ── Responsive ────────────────────────────── */
+    @media (max-width: 600px) {
+      header { padding: 0 1rem; }
+      .header-logo { height: 32px; }
+      .header-name { height: 22px; }
+      main { padding: 2rem 1rem 3rem; }
+      .page-title { font-size: 1.35rem; }
+      .tools-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <img src="assets/logos/W.png" alt="West Inmobiliaria" class="header-logo" />
+    <img src="assets/logos/Name.png" alt="West Inmobiliaria" class="header-name" />
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <h1 class="page-title">Herramientas</h1>
+    <p class="page-subtitle">Portal interno de herramientas para el equipo de West Inmobiliaria.</p>
+
+    <div class="tools-grid">
+
+      <!-- Tool 1: Generador de Liquidaciones -->
+      <a href="liquidaciones.html" class="tool-card">
+        <div class="tool-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        </div>
+        <h2>Generador de Liquidaciones</h2>
+        <p>Generá liquidaciones mensuales en PDF de forma rápida. Cargá datos desde Excel o ingresalos manualmente.</p>
+        <span class="tool-badge">ABRIR HERRAMIENTA →</span>
+      </a>
+
+      <!-- Tool 2: Calculadora de Intereses -->
+      <a href="calculadora/" class="tool-card">
+        <div class="tool-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="16" y1="18" x2="16" y2="18.01"/><line x1="12" y1="18" x2="12" y2="18.01"/><line x1="8" y1="18" x2="8" y2="18.01"/><line x1="8" y1="10" x2="16" y2="10"/></svg>
+        </div>
+        <h2>Calculadora de Intereses</h2>
+        <p>Calculá intereses sobre montos adeudados con diferentes tasas y períodos de tiempo.</p>
+        <span class="tool-badge">ABRIR HERRAMIENTA →</span>
+      </a>
+
+      <!-- Placeholder for future tools -->
+      <div class="tool-card placeholder">
+        <p class="placeholder-text">Próximamente…</p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    West Inmobiliaria · San Rafael, Mendoza
+  </footer>
+
+</body>
 </html>
