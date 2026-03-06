@@ -150,6 +150,7 @@ window.addEventListener('load', function(){
     <div class="data-grid">
       <div class="data-field full"><label>Propiedad</label><input class="val-input" type="text" id="pv_prop" value=""></div>
       <div class="data-field"><label>Contacto / Inquilino</label><input class="val-input" type="text" id="pv_tenant" value=""></div>
+      <div class="data-field"><label>Persona de contacto</label><input class="val-input" type="text" id="pv_contacto" value="" placeholder="Nombre del contacto (opcional)"></div>
       <div class="data-field"><label>CUIT</label><input class="val-input" type="text" id="pv_cuit" value=""></div>
       <div class="data-field"><label>Tel&eacute;fono</label><input class="val-input" type="text" id="pv_phone" value=""></div>
       <div class="data-field"><label>Email</label><input class="val-input" type="text" id="pv_email" value=""></div>
@@ -510,6 +511,23 @@ function removeExtra(btn){
 }
 
 function generatePDF(){
+  // Validate extras: amount filled but description empty
+  var invalidExtras=[];
+  document.querySelectorAll('#extrasBody tr').forEach(function(tr,idx){
+    var desc=tr.querySelector('.extra-desc').value.trim();
+    var amt=parseFloat(tr.querySelector('.extra-amt').value)||0;
+    if(amt!==0&&!desc){
+      invalidExtras.push(idx+1);
+      tr.querySelector('.extra-desc').style.borderColor='#e53e3e';
+      tr.querySelector('.extra-desc').focus();
+    } else {
+      tr.querySelector('.extra-desc').style.borderColor='';
+    }
+  });
+  if(invalidExtras.length>0){
+    alert('⚠️ Falta descripción en el concepto extra '+(invalidExtras.length===1?'N°'+invalidExtras[0]:'N°'+invalidExtras.join(' y N°'))+'. Completá la descripción antes de generar el PDF.');
+    return;
+  }
   try{
   if(!selectedProp)return;
   var p=selectedProp;
@@ -582,7 +600,7 @@ function generatePDF(){
   doc.setDrawColor(GOLD[0],GOLD[1],GOLD[2]);doc.setLineWidth(0.6);doc.line(mg,26,mg+60,26);
   doc.setFontSize(7);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
   doc.text('Tel: 2604 56-2284  |  inmobiliariawest@gmail.com',mg,31);
-  doc.text('San Rafael, Mendoza',mg,35);
+  doc.text('Juan Pi 26, Piso 3 Oficina 301  |  San Rafael, Mendoza',mg,35);
 
   doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(255,255,255);
   doc.text('LIQUIDACION MENSUAL',W-mg,14,{align:'right'});
@@ -602,10 +620,12 @@ function generatePDF(){
   var fDestino=document.getElementById('pv_destino').value||'';
   var fAct=document.getElementById('pv_actualizacion').value||'';
 
+  var fContacto=document.getElementById('pv_contacto').value||'';
+
   // INFO BOX
-  var boxH=34;doc.setFillColor(CREAM[0],CREAM[1],CREAM[2]);doc.roundedRect(mg,y,iw,boxH,2,2,'F');
+  var boxH=44;doc.setFillColor(CREAM[0],CREAM[1],CREAM[2]);doc.roundedRect(mg,y,iw,boxH,2,2,'F');
   var c1=mg+5,c2=W/2+5;var ty=y+6;
-  doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(GREEN[0],GREEN[1],GREEN[2]);doc.text('PROPIEDAD',c1,ty);ty+=6;
+  doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(GREEN[0],GREEN[1],GREEN[2]);doc.text('INMUEBLE',c1,ty);ty+=6;
   doc.setFontSize(10.5);doc.setTextColor(DARK[0],DARK[1],DARK[2]);
   var pName=fProp.length>42?fProp.substring(0,42)+'...':fProp;
   doc.text(pName,c1,ty);ty+=5.5;
@@ -626,7 +646,9 @@ function generatePDF(){
   doc.setFontSize(10.5);doc.setTextColor(DARK[0],DARK[1],DARK[2]);doc.text(fTenant,c2,ty);ty+=5.5;
   doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(SUBTLE[0],SUBTLE[1],SUBTLE[2]);
   if(fCuit)doc.text('CUIT: '+fCuit,c2,ty);ty+=5;
-  if(fPhone)doc.text('Tel: '+fPhone,c2,ty);
+  if(fPhone){doc.text('Tel: '+fPhone,c2,ty);ty+=5;}
+  if(fEmail){doc.text('Email: '+fEmail,c2,ty);ty+=5;}
+  if(fContacto)doc.text('Contacto: '+fContacto,c2,ty);
   y+=boxH+10;
 
   // TABLE
@@ -750,7 +772,7 @@ function generatePDF(){
   // FOOTER
   doc.setFillColor(GREEN[0],GREEN[1],GREEN[2]);doc.rect(0,H-10,W,10,'F');
   doc.setFontSize(6.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
-  doc.text('West Inmobiliaria  |  San Rafael, Mendoza  |  Este documento no constituye factura.',W/2,H-3.5,{align:'center'});
+  doc.text('West Inmobiliaria  |  San Rafael, Mendoza  |  Este documento no tiene validez como factura comercial ni fiscal.',W/2,H-3.5,{align:'center'});
 
   var safeProp=p.property.replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_').substring(0,40);
   doc.save('liquidacion_'+safeProp+'_'+monthName.toLowerCase()+'_'+periodYear+'.pdf');
