@@ -28,7 +28,7 @@ window.addEventListener('load', function(){
 </script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
 <style>
-  :root{--green:#0D402F;--green-light:#145A42;--green-muted:#7AAA96;--gold:#C9A84C;--cream:#F5F2EC;--cream-dark:#E8E3D9;--dark:#1E1E1E;--subtle:#5A6B63;--rule:#C8CFC9;--white:#FFF;--red:#B5342B;--radius:8px}
+  :root{--green:#1A6B4F;--green-light:#238C66;--green-muted:#7AAA96;--gold:#C9A84C;--cream:#F5F2EC;--cream-dark:#E8E3D9;--dark:#1E1E1E;--subtle:#5A6B63;--rule:#C8CFC9;--white:#FFF;--red:#B5342B;--radius:8px}
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--cream);color:var(--dark);min-height:100vh}
   .header{background:var(--green);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
@@ -538,7 +538,7 @@ function generatePDF(){
   if(!jsPDF){document.getElementById("genStatus").className="status err";document.getElementById("genStatus").textContent="Error: La libreria PDF no cargo. Verifica tu conexion a internet y recarga la pagina.";return;}
   var doc=new jsPDF({unit:'mm',format:'a4'});
   var W=210,H=297,mg=18,iw=W-2*mg;
-  var GREEN=[13,64,47],CREAM=[245,242,236],GOLD=[201,168,76],DARK=[30,30,30],SUBTLE=[90,107,99],MUTED=[143,191,171],RULE=[200,207,201],WHITE=[255,255,255];
+  var GREEN=[26,107,79],CREAM=[245,242,236],GOLD=[201,168,76],DARK=[30,30,30],SUBTLE=[90,107,99],MUTED=[143,191,171],RULE=[200,207,201],WHITE=[255,255,255];
 
   var extras=[];
 
